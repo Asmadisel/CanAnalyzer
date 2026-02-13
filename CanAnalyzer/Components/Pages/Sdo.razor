@@ -1,0 +1,66 @@
+﻿@page "/sdo"
+@using CanAnalyzer.Data
+@using CanAnalyzer.Models
+@using Microsoft.EntityFrameworkCore
+@inject ApplicationDbContext DbContext
+
+<h3>Sdo</h3>
+
+@if (_isLoading)
+{
+    <p>Загрузка данных...</p>
+}
+else if (_error != null)
+{
+    <div class="alert alert-danger">@_error</div>
+}
+else
+{
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Number</th>
+                <th>Manufacturer</th>
+                <th>Name</th>
+                <th>SDO Type</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var item in _sdoList)
+            {
+                <tr>
+                    <td>@item.SdoId</td>
+                    <td>@item.Number</td>
+                    <td>@item.Manufacturer</td>
+                    <td>@item.Name</td>
+                    <td>@item.SdoType</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@code {
+    private List<CanAnalyzer.Models.Sdo> _sdoList = new();
+    private bool _isLoading = true;
+    private string? _error;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _isLoading = true;
+            _sdoList = await DbContext.Sdo.AsNoTracking().ToListAsync();
+            _error = null;
+        }
+        catch (Exception ex)
+        {
+            _error = $"Ошибка загрузки данных: {ex.Message}";
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+}

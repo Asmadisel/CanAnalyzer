@@ -1,0 +1,100 @@
+﻿@page "/can-analyzer"
+@using CanAnalyzer.Services
+@inject CanDataService DataService
+@rendermode InteractiveServer
+
+<h3 class="mb-4">Анализатор CAN-сообщений</h3>
+
+<div class="card mb-4">
+    <div class="card-header bg-dark text-white">
+        <h5 class="mb-0">Список SDO (последние 50)</h5>
+    </div>
+    <div class="card-body">
+        <div class="list-group">
+            @foreach (var item in _sdoList)
+            {
+                <div class="list-group-item list-group-item-action @(item.Sdo.SdoId == _selectedSdoId ? "active" : "")"
+                     @onclick="() => SelectSdo(item.Sdo.SdoId)">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1">@item.Sdo.Name (@item.Sdo.Manufacturer)</h5>
+                        <small class="text-muted">@item.TotalCount сообщений</small>
+                    </div>
+                    <p class="mb-1">Посл. событие: @item.LatestRecordedAt.ToString("HH:mm:ss")</p>
+                    <small class="text-muted">ID: @item.Sdo.SdoId | Тип: @(item.Sdo.SdoTypeNavigation?.SdoTypeName ?? "")</small>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@if (_selectedSdoId.HasValue)
+{
+    <div class="card mb-4">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">Детали SDO: @(_selectedSdo?.Sdo.Name ?? "")</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Основная информация</h6>
+                    <dl class="row">
+                        <dt class="col-sm-3">ID</dt>
+                        <dd class="col-sm-9">@_selectedSdo?.Sdo.SdoId</dd>
+
+                        <dt class="col-sm-3">Номер</dt>
+                        <dd class="col-sm-9">@_selectedSdo?.Sdo.Number</dd>
+
+                        <dt class="col-sm-3">Производитель</dt>
+                        <dd class="col-sm-9">@_selectedSdo?.Sdo.Manufacturer</dd>
+
+                        <dt class="col-sm-3">Тип</dt>
+                        <dd class="col-sm-9">@(_selectedSdo?.Sdo.SdoTypeNavigation?.SdoTypeName ?? "")</dd>
+                    </dl>
+                </div>
+                <div class="col-md-6">
+                    <h6>Статусы событий</h6>
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Статус</th>
+                                    <th>Количество</th>
+                                    <th>Посл. событие</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var status in _statusStats)
+                                {
+                                    <tr>
+                                        <td>@status.Status.StatusName</td>
+                                        <td>@status.Count</td>
+                                        <td>@status.LatestRecordedAt.ToString("HH:mm:ss")</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private List<CanDataService.SdoWithStats> _sdoList = new();
+    private int? _selectedSdoId;
+    private CanDataService.SdoWithStats? _selectedSdo; // Это объект с Sdo внутри
+    private List<CanDataService.StatusStats> _statusStats = new();
+
+    protected override async Task OnInitializedAsync()
+    {
+        _sdoList = await DataService.GetSdoListAsync();
+    }
+
+    private async Task SelectSdo(int sdoId)
+    {
+        _selectedSdoId = sdoId;
+        _selectedSdo = _sdoList.FirstOrDefault(x => x.Sdo.SdoId == sdoId);
+        _statusStats = await DataService.GetStatusStatsForSdoAsync(sdoId);
+    }
+}
