@@ -29,7 +29,7 @@ namespace CanAnalyzer.Data
                 entity.HasOne(d => d.SdoTypeNavigation)
                     .WithMany(p => p.Sdos)
                     .HasForeignKey(d => d.SdoType)
-                    .HasPrincipalKey(p => p.SdoTypeId) // Добавлено!
+                    .HasPrincipalKey(p => p.SdoTypeId)
                     .HasConstraintName("fk_sdo_sdo_types");
             });
 
@@ -37,7 +37,9 @@ namespace CanAnalyzer.Data
             {
                 entity.ToTable("status_events", "public");
                 entity.HasKey(e => e.Id).HasName("status_events_pkey");
-                entity.Property(e => e.Id).HasColumnName("id");
+                entity.Property(e => e.Id).HasColumnName("id")
+                    .HasColumnName("id")
+                    .HasDefaultValueSql("gen_random_uuid()");
                 entity.Property(e => e.Time).HasColumnName("time");
                 entity.Property(e => e.StatusCode).HasColumnName("status_code");
                 entity.Property(e => e.Sdo).HasColumnName("sdo");
@@ -46,13 +48,13 @@ namespace CanAnalyzer.Data
                 entity.HasOne(d => d.StatusNavigation)
                     .WithMany(p => p.StatusEvents)
                     .HasForeignKey(d => d.StatusCode)
-                    .HasPrincipalKey(p => p.StatusCodeId) // Добавлено!
+                    .HasPrincipalKey(p => p.StatusCodeId) 
                     .HasConstraintName("fk_status_events_statuses");
 
                 entity.HasOne(d => d.SdoNavigation)
                     .WithMany(p => p.StatusEvents)
                     .HasForeignKey(d => d.Sdo)
-                    .HasPrincipalKey(p => p.SdoId) // Добавлено!
+                    .HasPrincipalKey(p => p.SdoId) 
                     .HasConstraintName("fk_status_events_sdo");
             });
 

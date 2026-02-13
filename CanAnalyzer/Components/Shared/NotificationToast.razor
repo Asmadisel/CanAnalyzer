@@ -1,0 +1,118 @@
+﻿@namespace CanAnalyzer.Components.Shared
+@implements IDisposable
+@using Microsoft.JSInterop
+@inject IJSRuntime JS
+
+<!-- ВСЕГДА рендерим контейнер, даже если уведомлений нет -->
+<div class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 9999;">
+    @foreach (var notification in _notifications)
+    {
+        <div class="toast show" role="alert" aria-live="assertive" aria-atomic="true"
+             style="min-width: 350px; margin-bottom: 10px; background-color: #fff; border: 1px solid #0d6efd; box-shadow: 0 4px 12px rgba(0,0,0,0.15);">
+            <div class="toast-header" style="background-color: #0d6efd; color: white;">
+                <strong class="me-auto">🔔 Новый сигнал</strong>
+                <small>@notification.Time.ToString("HH:mm:ss")</small>
+                <button type="button" class="btn-close btn-close-white ms-2 mb-1"
+                        aria-label="Close" @onclick="() => RemoveNotification(notification.Id)"></button>
+            </div>
+            <div class="toast-body">
+                <div class="mb-2">
+                    <strong>SDO:</strong> @notification.SdoId
+                </div>
+                <div class="mb-2">
+                    <strong>Статус:</strong> @notification.StatusName
+                </div>
+                <div>
+                    <strong>Время:</strong> @notification.Time.ToString("dd.MM.yyyy HH:mm:ss")
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    private List<Notification> _notifications = new();
+    private int _nextId = 0;
+    private bool _isInitialized = false;
+    private DotNetObjectReference<NotificationToast>? _dotNetReference;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender && !_isInitialized)
+        {
+            _isInitialized = true;
+            Console.WriteLine("NotificationToast: Setting up toast listener...");
+
+            try
+            {
+                _dotNetReference = DotNetObjectReference.Create(this);
+                await JS.InvokeVoidAsync("notificationManager.setupToastListener", _dotNetReference);
+                Console.WriteLine("NotificationToast: Toast listener setup complete");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"NotificationToast error: {ex.Message}");
+            }
+        }
+    }
+
+    [JSInvokable]
+    public void AddNotification(int sdoId, int statusCode, string statusName, string time)
+    {
+        try
+        {
+            Console.WriteLine($"AddNotification called: SDO={sdoId}, Status={statusName}, Time={time}");
+
+            if (!DateTime.TryParse(time, out var parsedTime))
+            {
+                parsedTime = DateTime.UtcNow;
+            }
+
+            var notification = new Notification
+            {
+                Id = _nextId++,
+                SdoId = sdoId,
+                StatusCode = statusCode,
+                StatusName = statusName,
+                Time = parsedTime
+            };
+
+            _notifications.Add(notification);
+            Console.WriteLine($"Notification added. Total notifications: {_notifications.Count}");
+            StateHasChanged();
+
+            // Автоматически удаляем через 10 секунд
+            _ = Task.Run(async () =>
+            {
+                await Task.Delay(10000);
+                await InvokeAsync(() => RemoveNotification(notification.Id));
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error in AddNotification: {ex.Message}");
+            Console.WriteLine($"Stack trace: {ex.StackTrace}");
+        }
+    }
+
+    private void RemoveNotification(int id)
+    {
+        var removedCount = _notifications.RemoveAll(n => n.Id == id);
+        Console.WriteLine($"Removed {removedCount} notification(s). Remaining: {_notifications.Count}");
+        StateHasChanged();
+    }
+
+    public void Dispose()
+    {
+        _dotNetReference?.Dispose();
+    }
+
+    private class Notification
+    {
+        public int Id { get; set; }
+        public int SdoId { get; set; }
+        public int StatusCode { get; set; }
+        public string StatusName { get; set; } = string.Empty;
+        public DateTime Time { get; set; }
+    }
+}

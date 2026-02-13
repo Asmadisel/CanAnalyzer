@@ -1,5 +1,6 @@
 ﻿using CanAnalyzer.Components;
 using CanAnalyzer.Data;
+using CanAnalyzer.Hubs;
 using CanAnalyzer.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -7,7 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.AddServiceDefaults();
 
-// Добавляем подключение к БД
+//  БД
 builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseNpgsql(
         builder.Configuration.GetConnectionString("DefaultConnection"),
@@ -15,8 +16,18 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     )
 );
 
-// Регистрируем сервис для работы с данными
+// Регистрируем сервисы
 builder.Services.AddScoped<CanDataService>();
+builder.Services.AddSingleton<IEventGenerator, EventGeneratorService>();
+builder.Services.AddHostedService<EventGeneratorService>();
+
+// Добавляем SignalR
+builder.Services.AddSignalR(options =>
+{
+    options.EnableDetailedErrors = true;
+    options.ClientTimeoutInterval = TimeSpan.FromMinutes(10);
+    options.HandshakeTimeout = TimeSpan.FromSeconds(30);
+});
 
 // Добавляем сервисы
 builder.Services.AddRazorComponents()
@@ -59,5 +70,8 @@ app.UseStaticFiles();
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
+
+// Маршрут для SignalR
+app.MapHub<CanHub>("/canhub");
 
 app.Run();

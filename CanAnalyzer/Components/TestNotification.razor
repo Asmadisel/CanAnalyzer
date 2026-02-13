@@ -1,0 +1,25 @@
+﻿<div style="position: fixed; bottom: 20px; right: 20px; background: #ffcc00; padding: 15px;
+            border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); z-index: 9999;">
+    <h3 style="margin: 0 0 5px 0;">Тест уведомления</h3>
+    <p style="margin: 5px 0;">SDO: @SdoId</p>
+    <p style="margin: 5px 0;">Статус: @StatusName</p>
+    <p style="margin: 5px 0;">Время: @Time.ToString("dd.MM.yyyy HH:mm:ss")</p>
+    <button class="btn btn-sm btn-danger mt-2" @onclick="() => IsVisible = false">Закрыть</button>
+</div>
+
+@code {
+    [Parameter]
+    public int SdoId { get; set; }
+
+    [Parameter]
+    public string StatusName { get; set; } = "Тест";
+
+    [Parameter]
+    public DateTime Time { get; set; } = DateTime.Now;
+
+    [Parameter]
+    public bool IsVisible { get; set; } = true;
+
+    [Parameter]
+    public EventCallback OnClose { get; set; }
+}

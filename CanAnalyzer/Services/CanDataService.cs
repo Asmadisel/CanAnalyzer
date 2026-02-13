@@ -15,7 +15,7 @@ public class CanDataService
 
     public async Task<List<SdoWithStats>> GetSdoListAsync()
     {
-        // Шаг 1: Получаем статистику по событиям
+        //  Получаем статистику по событиям
         var stats = await _context.StatusEvent
             .GroupBy(se => se.Sdo)
             .Select(g => new {
@@ -27,14 +27,14 @@ public class CanDataService
             .Take(50)
             .ToListAsync();
 
-        // Шаг 2: Получаем все SDO с типами
+        // Получаем все SDO с типами
         var sdoIds = stats.Select(x => x.SdoId).ToList();
         var sdoDict = await _context.Sdo
             .Include(s => s.SdoTypeNavigation)
             .Where(s => sdoIds.Contains(s.SdoId))
             .ToDictionaryAsync(s => s.SdoId);
 
-        // Шаг 3: Объединяем данные
+        // Объединяем данные
         var result = new List<SdoWithStats>();
         foreach (var stat in stats)
         {

@@ -2,7 +2,7 @@
 {
     public class StatusEvent
     {
-        public int Id { get; set; }
+        public Guid Id { get; set; }
         public DateTime Time { get; set; }
         public int StatusCode { get; set; }
         public int Sdo { get; set; }
